@@ -1,0 +1,34 @@
+; This kestrel user program restores the state of the one sram location
+; across the entire processor array. This program is run after 
+; getstate_{one|all}sram.
+; Before running this program, the runtime environment should
+; 1. flush the input and output queues.
+; 2. handle relocation (modify immediate values for instruction branches)
+; 3. save controller state
+
+; The loop interation count is modified by the rte to reflect
+; the actual number of processors
+; the SRAM location to read is modified by the rte to specify the
+; location to read/write.
+
+start:
+
+; load mdr into array
+	beginLoop 4
+	move R0, L0, qtoarr, endLoop
+; the only way to get a value into the mdr is to write it
+; to the sram and read it back (can be done simultaneously).
+; the immediate field is modified by the rte to reflect 
+; the desired sram location
+; read sram location into array
+	move R0, L0, write(#0), read(#0), beginLoop 4
+	move R0, L0, qtoarr, endLoop
+
+; restore sram value (immediate modified by rte)
+	move R0, L0, write(#0)
+
+; restore R0/L0 (+1 reads for end register)
+	move R0, L0, qtoarr, beginLoop  4
+	move R0, L0, qtoarr, endLoop
+
+; end of file 'restorestate_onesram.kasm'

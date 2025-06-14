@@ -1,0 +1,32 @@
+
+; This kestrel user program gets the state of the one sram location
+; across the entire processor array. *this program is destructive*
+; Before running this program, the runtime environment should
+; 1. flush the input and output queues.
+; 2. handle relocation (modify immediate values for instruction branches)
+; 3. save controller state
+
+; The loop interation count is modified by the rte to reflect
+; the actual number of processors.
+; the SRAM location to read is modified by the rte to specify the
+; location to read
+
+; program destoys MDR and L0/R0, run restorestate afterwards
+
+start:
+
+; save register location 0 (+1 write for end register bank)
+	move R0, R0, arrtoq, beginLoop 4
+	move R0, L0, arrtoq, endLoop
+
+; save MDR
+	move L0, mdr, beginLoop 4
+	move R0, L0, arrtoq, endLoop
+
+; read SRAM location: immediate value is modified by the rte
+; to select the appropriate location
+	read(#0)
+	move L0, mdr, beginLoop 4
+	move R0, L0, arrtoq, endLoop
+
+; end of file 'getstate_onesram.kasm'

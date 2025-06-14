@@ -1,0 +1,13 @@
+
+; This kestrel user program restores the state of register zero
+; after the getstate_latches program has been run.
+; Before running this program, the runtime environment should
+; 1. flush the input and output queues.
+; 2. handle relocation (modify immediate values for instruction branches)
+; 3. save controller state
+start:
+	beginLoop 4
+	move R0, L0, qtoarr, endLoop
+	move R0, L0, qtoarr
+
+; end of file

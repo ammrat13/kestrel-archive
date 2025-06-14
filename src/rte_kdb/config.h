@@ -1,0 +1,18 @@
+/* config.h.  Generated automatically by configure.  */
+/* $Id: config.h.in,v 1.1 1998/11/20 16:24:52 dmdahle Exp $ */
+/*
+ * config.h - this file is modified by configure according to the 
+ *	results of the system tests.
+ */
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define HAVE_READLINE_H 0
+#define HAVE_LIBRARY_H 0
+#define HAVE_LIBREADLINE 1
+
+#endif /* CONFIG_H */
+
+
+

@@ -1,0 +1,80 @@
+# Generated automatically from Makefile.in by configure.
+# This is the Makefile for the Kestrel Debugger (kdb)
+
+
+prefix		= /usr/local
+exec_prefix	= ${prefix}
+
+srcdir		= .
+top_srcdir	= .
+
+CC	= gcc
+GCCOPTS = -g -O2 -Wall -ansi -pedantic -D__USE_FIXED_PROTOTYPES__ -g -DDATE="\"`date +%D_%T`\"" 
+LIBS    = -lreadline -ltermcap -lm 
+KASM	= newkasm
+
+.SUFFIXES: .obj .kasm
+
+###############################################################
+#
+#			Source Macros
+#
+###############################################################
+
+
+HDRS = 	breakpoints.h	commands.h	\
+	format.h	main.h		\
+	pe.h		precision.h	\
+	print.h 	program.h	\
+	interface.h	kdb.h		\
+	code.h		queues.h	\
+	controller.h	remote.h 	\
+	server.h
+OBJS = 	breakpoints.o	commands.o	\
+	format.o	main.o		\
+	pe.o		precision.o	\
+	print.o 	program.o	\
+	interface.o	kdb.o		\
+	code.o		getstate.o	\
+	getstate_prgs.o queues.o	\
+	controller.o	remote.o	\
+	server.o
+BINS = 	kestrel
+
+KASM_OBJS = getstate_regs.obj		getstate_onesram.obj \
+	    restorestate_onesram.obj	getstate_allsram.obj \
+	    getstate_latches.obj	restorestate_regzero.obj
+KASM_SCRS = getstate_regs.kasm		getstate_onesram.kasm \
+	    restorestate_onesram.kasm  	getstate_allsram.kasm \
+	    getstate_latches.kasm	restorestate_regzero.kasm
+
+###############################################################
+#							      #
+#			Targets				      #
+#							      #
+###############################################################
+
+default: 
+	rm -rf main.o
+	make kestrel
+
+kestrel: ${OBJS}
+	$(CC) ${OBJS} -o kestrel ${LIBS} 
+
+remote.o: remote.c
+	cc remote.c -c -g
+
+.c.o: ${HDRS}
+	${CC} ${GCCOPTS} $*.c -c
+
+.kasm.obj: 
+	${KASM} $*
+
+assemble: ${KASM_OBJS}
+
+clean:
+	-rm -f ${OBJS} ${DEPS} ${KASM_OBJS}
+	-rm -if *~
+	-rm -f *.obj *.debug
+
+#end of file

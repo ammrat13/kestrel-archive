@@ -1,0 +1,34 @@
+# $Id: configure.in,v 1.2 1998/11/20 17:38:56 dmdahle Exp $
+#
+# Input to autoconf to generate a configure script
+# for the kestrel runtime environment
+#
+
+AC_INIT(main.c)
+AC_CONFIG_HEADER(config.h)
+
+AC_PROG_CC
+AC_PROG_GCC_TRADITIONAL
+AC_ISC_POSIX
+AC_PROG_INSTALL
+
+AC_CHECK_LIB(m, main)
+
+#check for network library on solaris
+AC_CHECK_LIB(xnet, main)
+
+# Find termcap for readlin
+AC_CHECK_LIB(termcap, tgetnum)
+
+#check for readline library
+AC_CHECK_LIB(readline, main)
+AC_CHECK_HEADERS(readline.h)
+
+#check for history library
+AC_CHECK_HEADERS(history.h)
+
+AC_OUTPUT(Makefile)
+
+#end of file 'configure.in'
+
+

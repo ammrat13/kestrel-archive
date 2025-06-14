@@ -1,0 +1,77 @@
+; This kestrel user program gets the state of the register banks
+; from the Kestrel array.
+; Before running this program, the runtime environment should
+; 1. flush the input and output queues.
+; 2. handle relocation (modify immediate values for instruction branches)
+; 3. save controller state
+
+; this routines reads out the contents of all registers of the same
+; number in every PE twice: once moving data right and once moving
+; data left. This gives us the contents of shadow registers to test for
+; write errors that could be missed just looking at one side.
+;
+; The macro avoids having to save the contents of a set of registers
+; output of the array by cycling the register values through the
+; controller and back into the array.
+;
+; This program outputs (NPROCS + 1) * 2 data elements for each register bank.
+; NPROCS + 1 elements are generated instead of just NPOCS elements because for
+; n PEs, there are n+1 logical registers.
+
+	macrodef moveRegsWrapAround(Rreg, Lreg)
+; values from PE[NPROCS-1..0]
+	move $Rreg, $Rreg, arrtoscr
+	nop
+	beginLoop 4
+	move $Rreg, $Lreg, arrtoq, scrtoarr
+	nop
+	endLoop
+	move $Rreg, $Lreg, scrtoarr
+; values from PE[0..NPROCS-1]
+	move $Lreg, $Lreg, arrtoscr
+	nop
+	beginLoop 4
+	move $Lreg, $Rreg, arrtoq, scrtoarr
+	nop
+	endLoop
+	move $Lreg, $Rreg, scrtoarr
+	macroend
+
+start:
+
+; begin program
+	moveRegsWrapAround(R0,L0)
+	moveRegsWrapAround(R1,L1)
+	moveRegsWrapAround(R2,L2)
+	moveRegsWrapAround(R3,L3)
+	moveRegsWrapAround(R4,L4)
+	moveRegsWrapAround(R5,L5)
+	moveRegsWrapAround(R6,L6)
+	moveRegsWrapAround(R7,L7)
+	moveRegsWrapAround(R8,L8)
+	moveRegsWrapAround(R9,L9)
+	moveRegsWrapAround(R10,L10)
+	moveRegsWrapAround(R11,L11)
+	moveRegsWrapAround(R12,L12)
+	moveRegsWrapAround(R13,L13)
+	moveRegsWrapAround(R14,L14)
+	moveRegsWrapAround(R15,L15)
+	moveRegsWrapAround(R16,L16)
+	moveRegsWrapAround(R17,L17)
+	moveRegsWrapAround(R18,L18)
+	moveRegsWrapAround(R19,L19)
+	moveRegsWrapAround(R20,L20)
+	moveRegsWrapAround(R21,L21)
+	moveRegsWrapAround(R22,L22)
+	moveRegsWrapAround(R23,L23)
+	moveRegsWrapAround(R24,L24)
+	moveRegsWrapAround(R25,L25)
+	moveRegsWrapAround(R26,L26)
+	moveRegsWrapAround(R27,L27)
+	moveRegsWrapAround(R28,L28)
+	moveRegsWrapAround(R29,L29)
+	moveRegsWrapAround(R30,L30)
+	moveRegsWrapAround(R31,L31)
+
+; end of program 'getstate_regs.kasm'
+

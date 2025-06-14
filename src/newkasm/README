@@ -1,0 +1,5 @@
+To compile the Kestrel assembler, just type
+make clean
+make
+
+

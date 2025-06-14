@@ -1,0 +1,10 @@
+
+-- Error msg: "Field opA must be fully specified (rrrrrr)" should read 
+something more like what is in kasm96: "operand A must be a register"
+or rather: "operand A is not defined"
+
+-- Kasm96 thinks that opC must be a register when used in conjunction 
+with opB (where opB specifies a register). This is not correct as far as
+I know.
+
+

@@ -1,0 +1,49 @@
+
+; This kestrel user program gets the state of the latches from
+; the kestrel array. *this program is desctructive*
+; Before running this program, the runtime environment should
+; 1. flush the input and output queues.
+; 2. handle relocation (modify immediate values for instruction branches)
+; 3. save controller state
+
+; Loop counts are modified by the runtime environment to reflect the
+; actual number of PEs.
+; Destroys the contents of register 0, run restorestate afterwards
+
+	macrodef readFlag(flag)
+	move L0, #0
+	selectc L0, #255, L0, $flag, beginLoop 4
+	move R0, L0, arrtoq, endLoop
+	macroend
+
+start:
+; read out register 0
+	move R0, R0, arrtoq, beginLoop 4
+	move R0, L0, arrtoq, endLoop
+
+; read MDR
+	move L0, mdr, beginLoop 4
+	move R0, L0, arrtoq, endLoop
+
+; read multhi
+	move L0, mhi, beginLoop 4
+	move R0, L0, arrtoq, endLoop
+
+; read bitshifter
+	move L0, bs, beginLoop 4
+	move R0, L0, arrtoq, endLoop
+
+; read cLatch, eqLatch, and minLatch
+	readFlag(fbcLatch)
+	readFlag(fbeqLatch)
+	readFlag(fbminLatch)
+
+; read maskLatch
+	move L0, #0
+	beginCond
+	move L0, #255
+	endCond
+	beginLoop 4
+	move R0, L0, arrtoq, endLoop
+
+; end of file

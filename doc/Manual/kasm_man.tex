@@ -1,0 +1,224 @@
+% Document Type: LaTeX
+% Master File: kasm_man.tex
+\documentstyle[10pt,fullpage,psfig]{article}
+
+\newcommand{\ifsomething}[2]{%
+{\setbox0=\hbox{#1}%
+\ifdim\wd0=0pt%
+\else%
+{#2}\fi}}
+
+\newsavebox{\kbitnames}
+\newsavebox{\cbitnames}
+
+\def\s#1#2#3{\put(#1,3.5){\makebox(0,0)[c]{{\tiny\rm #2}}}%
+\put(#1,2.0){\makebox(0,0)[c]{\raisebox{0pt}[0pt][0pt]{\tiny #3}}}}
+
+\savebox{\kbitnames}{\footnotesize\tt\setlength{\unitlength}{1.21ex}%
+\begin{picture}(70,4)%
+\s{1}{fr}{ce}\s{5}{alu}{func}\s{9}{c}{i}\s{11}{m}{p}%
+\s{13}{l}{c}\s{15}{f}{i}\s{19}{flag}{bus}\s{24.5}{bit}{shift}%
+\s{28.5}{res}{mx}\s{32}{sram}{}\s{31}{}{r}\s{33}{}{w}\s{36}{opB}{sel}%
+\s{41.5}{opA}{register}\s{49}{opC}{register}\s{56}{dest}{register}%
+\s{64}{array}{immediate}\end{picture}}
+
+\savebox{\cbitnames}{\footnotesize\tt\setlength{\unitlength}{1.22ex}%
+\begin{picture}(70,4)%
+\s{1.5}{spa}{re}\s{4}{im}{mx}\s{7}{diag}{out}\s{10}{D}{pop}%
+\s{20}{controller}{immediate}\s{29}{br}{k}\s{31}{f}{ot}%
+\s{34}{i/o}{}\s{33}{}{r}\s{35}{}{w}%
+\s{38}{dsel}{}\s{37}{}{r}\s{39}{}{l}%
+\s{42.5}{scratch}{}\s{41}{}{w}\s{43.5}{}{mx}%
+\s{46}{}{sh}\s{48}{}{ld}\s{47}{cbs}{}%
+\s{50.5}{imm}{sel}\s{54}{br}{}\s{53}{}{w}\s{55}{}{c}%
+\s{58}{cnt}{}\s{57}{}{d}\s{59}{}{ps}%
+\s{63.5}{pc}{}\s{61}{}{po}\s{63}{}{pu}\s{65.5}{}{sel}%
+\end{picture}}
+
+
+\def\kbits#1{{\footnotesize\tt\setlength{\unitlength}{1.21ex}%
+\begin{picture}(70,4)%
+\put(0,0){\usebox{\kbitnames}}\put(0.5,0){\mbox{\tt #1}}\end{picture}}}
+
+\def\cbits#1{{\footnotesize\tt\setlength{\unitlength}{1.22ex}%
+\begin{picture}(70,4)%
+\put(0,0){\usebox{\cbitnames}}%
+\put(0.5,0){\mbox{\tt #1}}\end{picture}}}
+
+\setlength{\parindent}{0pt}
+\long\def\kasmdesc#1#2#3#4{%
+\par\medskip{\bf Description:}\hspace{2ex} #1
+\ifsomething{#2}{\par{\bf Comments:}\hspace{2ex} #2}
+\ifsomething{#3}{\par\medskip\centerline{\kbits{#3}}}
+\ifsomething{#4}{\par\medskip\centerline{\cbits{#4}}}
+}
+\pagestyle{headings}
+% opcode, name, unused, operation, syntax, uses, sets
+% {descr, comments, kestrel, controller}
+\long\def\kasm#1#2#3#4#5#6#7#8#9{{%
+\index{{\bf #1}}#9%
+\protect\setlength{\parindent}{0pt}%
+\begin{minipage}{\textwidth}
+{\Large\bf #1} \hfill {\bf #2}\hfill {\Large\bf #1}\par\medskip\par
+{\bf Operation:} {\sc {#4}}\hfill {\bf Uses:} {\sc {#6}}\\
+{\bf Syntax: } {#5}
+\hfill {\bf Sets:} {\sc {#7}}
+\kasmdesc #8
+\par\centerline{\rule{0.6\textwidth}{0.5pt}}
+\end{minipage}\bigskip}}
+
+\makeindex
+\begin{document}
+
+\vspace*{0.1\textheight}
+
+{\large
+\thispagestyle{empty}
+\begin{center}
+\Huge KASM Assembly Manual
+\end{center}
+
+\vspace{2em}
+\begin{center}
+\Large Richard Hughey\\~\\UCSC Kestrel Project\\
+Department of Computer Engineering\\Jack Baskin School of Engineering\\
+University of California\\Santa Cruz, CA
+\end{center}
+
+\bigskip
+\begin{center}
+Technical Report UCSC-CRL-98-11\\
+September, 1998
+\end{center}
+ 
+\vspace{2em}
+
+\hspace*{\fill}
+\psfig{figure=kestrelbw.eps,width=0.2\textheight}
+\hspace*{\fill}
+\psfig{figure=mediumslug.ps,width=0.2\textheight}
+\hspace*{\fill}
+
+}
+
+\clearpage
+\tableofcontents
+\clearpage
+
+\section{Introduction}
+
+This manual documents the opcodes, fields, and directives supported
+by the new {\sc Kasm\/} assembler.  The manual assumes familiarity
+with the Kestrel architecture.  The reader is referred to the papers
+available from the http://www.cse.ucsc.edu/research/kestrel for more
+information on the system architecture.
+
+\section{Running Kasm}
+
+The {\sc Kasm\/} command line is:
+\begin{center}
+\verb+newkasm [-g] [-b] [-Dsym=value] [-o outfile] file[.kasm]+
+\end{center}
+Where {\tt file} is a {\sc Kasm\/} assembly language file.  The
+{\verb+-g+} option indicates that the output file should be annotated with
+debugging information. The \verb+-b+ option, useful in debugging
+assembly code, indicates that output 
+should be in binary rather than the hexadecimal required by {\sc Kestrel}
+The \verb+[-D]+ option can be used to define
+one or more symbols as if they had {\tt define} statements in the
+assembly file.  The {\sc Kasm\/} assembler will output 
+Kestrel object code, and debugging information if requested, into
+{\verb+file.ko+}.  The \verb+-o+ option indicates that a different
+file should be used.  Error messages are printed to {\tt stderr} in a 
+format compatible with Emacs' compile mode.
+
+\section{Running Kestrel}
+
+{\sc Kasm} programs are run in the Kestrel runtime environment.
+The {\sc kestrel} command line is:
+\begin{center}
+ \verb+kestrel -[s|b] [-debug] objectfile.ko inputfile ouputfile [#procesors] +
+\end{center}
+
+Here, the selection of {\tt s} or {\tt b} picks either the simulator
+or the Kestrel hardware.  Use of the Kestrel hardware requires that
+one of the two Kestrel boards be available and that its socket-based
+server be running.
+
+The {\tt debug} option places the user immediately in the Kestrel
+debugger.  A series of menus can be used to run or step the program
+and examine the contents of PEs in either the simulator or the
+hardware.
+
+The object file is the output from the assembler, and the required
+input and output files have the data for the program, which must be in
+the order required by the programs.  When {\sc Kestrel} is used to
+access the simulator, the number of processing elements can be
+specified  (the default is \verb+#512+, to agree with the hardware).
+
+\section{Kasm syntax}
+
+{\sc Kasm\/} assembly code makes use of the opcodes, fields, and
+directives specified below.  A typical {\sc Kasm\/} line includes one
+or more compatible opcodes, a destination register, zero to three
+Kestrel operands, and possibly some instruction modifiers or
+controller commands.  Comments are delimited with semicolons ---
+whenever a semicolon is included in a line, the semicolon and the
+remainder of the line are ignored.
+
+Opcodes, labels, defines, and macro names are all case insensitive.
+
+Each opcode description includes its operation, syntax, a list (apart
+from registers) of Kestrel internal state that is used and that is
+changed,  description and comments, and when appropriate a bit
+pattern.  The bit patterns define the behavior of the instruction in
+the assembler.  Bit patters are made up of several single-letter
+specifiers which are interpreted as follows:
+
+\begin{center}
+\begin{tabular}{ll}
+ x    &Does not affect given bit\\
+ 0,1  &Bit set to 0 or 1\\
+ z,w  &Bit defaults to 0 or 1 (can be overridden)\\
+ A,B  &1/0 if opA is first operand, 0/1 otherwise (func bits only)\\
+ a,b  &Default A,B (can be overridden)\\
+ E    &Either opA or opB must be specified but not both (opA and opB
+ bits only)\\
+ e    &Default E (can be overridden)\\
+ l    &Label required in Cimm\\
+ r    &Required --- must be specified by another field\\
+ u    &Unused bit, error if another field sets
+\end{tabular}
+\end{center}
+
+Opcodes can generally be listed in any order on a line, except that
+those that require operands should be listed first to ensure the
+correct parsing of the operands.  For example, to perform an add-min
+instruction, the code
+\begin{center}
+\tt add L1, L2, MDR, L3, minc
+\end{center}
+would generate an error message because the third source operand ({\tt L3})
+is unneeded for an addition.  The correct form would place the {\tt
+minc} after the {\tt add}.
+
+It is suggested opcodes and fields that require operands or affect the
+output of the ALU (such as {\tt mp}, the arithmetic multi-precision
+indicator) be placed first on the line, followed by the operands,
+followed by other modifiers, such  controller (for example, {\tt
+jump}) and bitshifter control fields (for example, {\tt bspush}).
+
+Comments, symbolic constants (see {\tt define}), and macros can be
+used to make code more readable.
+
+\input{kasmopc}
+
+\def\indexentry#1#2{\item #1, #2}
+
+\clearpage
+
+\input kasm_man.ind
+
+
+
+\end{document}

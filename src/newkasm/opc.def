@@ -1,0 +1,774 @@
+/* Opcodes file.  Opcodes are split into two types, controller (OPC) and */
+/* Kestrel (OPC), and only the appropriate default fields are specified. */
+/* Entries are name, group (0=kestrel, 1=controller), fields in order, */
+/* and documentation. Values in fields are: */
+/*      0, 1:  Set to a value */
+/*      z, w:  Default to a 0 or a 1 */
+/*      x:     Don't care (in practice, defaults to 0) */
+/*      u:     Unused (error if set by another field) */
+/*      r:     Required (must be set by another field) */
+/*      l:     Required label (for controller immediate field) */
+/*      A:     1 if operand A is first operand, 0 otherwise. */
+/*      B:     1 if operand B is first operand, 0 otherwise. */
+/*      a,b:   As above, but overwritable like z, w (ie, must have an ALU output). */
+/*      E:     Either operand A or operand B is required (but not both) */
+/*      e:     Either operand A or operand B is required, but can be overwritten by r. */
+/* See newkasm.c:mergebits for priorities between specifiers. */
+
+/*  Kestrel opc  frc fnc ci mplcfi fb    bit  rm r w opB   opA    opC    opD      imm,  doc */
+OPC(invert,      "x 01BA0 0 0 0 x xxxxx xxxx xx x x EEE EEEEEE xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Invert Operand", "result <- ! op1",
+    "The 1s complement of operand A or B.",
+    "")
+OPC(and,         "x 00111 0 0 0 x xxxxx xxxx xx x x rrr rrrrrr xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "And", "result <- opB & opA",
+    "Logical and.",
+    "")
+OPC(nand,        "x 01000 0 0 0 x xxxxx xxxx xx x x rrr rrrrrr xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Nand", "result <- ! ( opA & opB )",
+    "Bitwise NAND function.",
+    "")
+OPC(nor,         "x 01110 0 0 0 x xxxxx xxxx xx x x rrr rrrrrr xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Nor", "result <- ! (opA | opB )",
+    "Bitwise NOR function.",
+    "")
+OPC(or,          "x 00001 0 0 0 x xxxxx xxxx xx x x rrr rrrrrr xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Or", "result <- opA | opB",
+    "Bitwise OR function.",
+    "")
+OPC(xnor,        "x 00110 0 0 0 x xxxxx xxxx xx x x rrr rrrrrr xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Exclusive NOR", "result <- ! ( opA ^ opB)",
+    "Bitwise exclusive NOR.",
+    "")
+OPC(xor,         "x 01001 0 0 0 x xxxxx xxxx xx x x rrr rrrrrr xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Exclusive OR", "result <- opA ^ opB",
+    "Bitwise exclusive OR.",
+    "")
+OPC(move,        "x 00AB1 0 0 0 x xxxxx xxxx xx x x EEE EEEEEE xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Move", "result <- op1",
+    "Move operand A or operand B to destination.",
+    "Register OpC and can be used with SRAM or for comparison as move takes place.")
+OPC(movec,        "x xxxxx x x x x xxxxx xxxx 10 x x xxx xxxxxx rrrrrr rrrrrr xxxxxxxx", CONTNULL,
+    "Move Operand C", "result <- opC",
+    "Move register operand C to destination.",
+    "This should only be used if the ALU is producing a flag or state of interest "
+     "at the same time.  For example, MOVEC SUB L2,L3,MDR,R2,fbats,push will, at the same "
+     "time as copying R2 to L2 via operand C, subtract the MDR from L3, place that sign on the "
+     "flag bus and push that bit onto the bitshifter, turning off PEs for which L3 is less than the MDR. "
+     "SRAM base plus register addressing is not available during a MOVEC.")
+OPC(add,         "x 10001 z z 1 x xxxxx xxxx xx x x rrr rrrrrr xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Add", "result <- opB + opA",
+    "Addition of two bytes.  Use ADD MP on high bytes for multiprecision addition. "
+     "Use ADD C1 for low byte of A + B + 1.",
+    "")
+OPC(addzz,       "x 01111 z z 1 x xxxxx xxxx xx x x uuu uuuuuu xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Add, Zero", "result <- 0 + 0",
+    "Copy 0 to destination.  Use ADDZZ C1 for 1 and ADDZZ MP to "
+     "copy the carry latch to the destination.",
+    "")
+OPC(addxx,       "x 10AB1 z z 1 x xxxxx xxxx xx x x EEE EEEEEE xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Add, Operand to self", "result <- op1 + op1",
+    "Add operand A or B to itself.  Use ADDXX C1 to add 1 more and ADDXX MP "
+     "for higher bytes.",
+    "")
+OPC(addxz,       "x 00AB1 z z 1 x xxxxx xxxx xx x x EEE EEEEEE xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Add, Zero and Operand", "result <- op1 + 0",
+    "Add operand A or B to zero.  Use ADDXZ C1 to increment with "
+     "ADDXZ MP for the higher bytes.  Use ADDXZ MP to add the carry latch to the operand.",
+    "")
+OPC(sub,       "x 10AB0 w z 1 x xxxxx xxxx xx x x rrr rrrrrr xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Subtract, op1 and op2", "result <- op1 - op2",
+    "Subtract operands A and B in either order.",
+    "Use SUB for low byte of multiprecision subtract, SUB MP for higher bytes. "
+     "Use SUB B1 to subtract an additional 1.")
+OPC(subzx,     "x 01AB0 w z 1 x xxxxx xxxx xx x x EEE EEEEEE xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Subtract, Zero and Operand", "result <- 0 - op1",
+    "Subtract operand A or B from Zero.  Use SUBZX MP for higher bytes. "
+     "Use SUBZX B1 to subtract one more.",
+    "")
+OPC(subxz,     "x 11AB1 w z 1 x xxxxx xxxx xx x x EEE EEEEEE xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Subtract, Operand and Zero", "result <- op1 - 0",
+    "Subtract Zero from operand A or B.  Use SUBXZ MP for higher bytes and SUBXZ B1 to decrement.",
+    "")
+OPC(subzz,     "x 00000 w z 1 x xxxxx xxxx xx x x uuu uuuuuu xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Subtract, Zero", "result <- 0 - 0",
+    "Copy 0 to destination.  Use SUBZZ B1 for -1 and SUBZZ MP to "
+     "place -1 in the destination if there was a borrow on the previous subtract.",
+    "")
+OPC(addmc,       "x 1rrrz 1 1 0 x xxxxx xxxx xx x x xxx xxxxxx rrrrrr xxxxxx xxxxxxxx", CONTNULL,
+    "Multiply, Adding C", "(Mhi,dest) <- Product + opC",
+    "Add unsigned register operand C to the product of a multiply. "
+     "Modifier for MULT, MULSA, MULTSB, and MULTSAB. ",
+    "This is used to bring down partial products from the previous row of "
+     "multiplication in a multi-precision multiply.  For example, in multiplying "
+     "(1,2,3) by (4,5,6), the results of (1,2,3) by (6) are stored in registers.  In "
+     "multiplying (1,2,3) by (5), the appropriate registers are added back into the multiplication.")
+OPC(addmhi,       "x zrrr1 1 1 0 x xxxxx xxxx xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+    "Multiply, Adding MHi", "(Mhi,dest) <- Product + Mhi",
+    "Add unsigned register Mhi to the product of a multiply. "
+     "Modifier for MULT, MULSA, MULTSB, and MULTSAB. ",
+    "This is used to chain partial products in the current row "
+     "in a multi-precision multiply.  For example, in multiplying "
+     "(1,2,3) by (4,5,6), the (3) by (6) multiply is a basic MULT, while "
+     "the (2) by (6) multiply used ADDMHI to add in the high byte of the "
+     "just-performed multiply. The (3) by (5) multiply will use ADDMC to "
+     "add in the second byte of (1,2,3) by (6), while the (2) by (5) multiply "
+     "will use both ADDMC to add in the third byte of the previous row and "
+     "ADDMHI to add in the high byte of the (3) by (5) multiply.")
+OPC(mult,        "x z100z 1 1 0 x xxxxx xxxx xx x x rrr rrrrrr xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Multiply", "(Mhi,dest) <- opA * opB",
+    "Multiply two unsigned bytes to produce a two-byte result.",
+    "Use for the first multiply of signed or unsigned multibyte multiplies.  Use with ADDMHI and "
+     "ADDMC for all partial products not involving a signed byte.")
+OPC(multsa,      "x z101z 1 1 0 x xxxxx xxxx xx x x rrr rrrrrr xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Multiply,  signed A", "(Mhi,dest) <- +- opA * opB",
+    "Multiply a signed operand A with an unsigned operand B to produce a 2-byte result.",
+    "Use in place of MULT when dealing the sign byte (MSB) of a signed operand A and an unsigned byte of operand B.")
+OPC(multsb,      "x z110z 1 1 0 x xxxxx xxxx xx x x rrr rrrrrr xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Multiply, signed B", "(Mhi,dest) <- opA * +- opB",
+    "Multiply an unsigned operand A with a signed operand B to produce a 2-byte result.",
+    "Use in place of MULT when dealing with the sign byte (MSB) of a signed operand B and an unsigned byte of operand A.")
+OPC(multsab,     "x z111z 1 1 0 x xxxxx xxxx xx x x rrr rrrrrr xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Multiply, signed A and B", "(mhi,dest) <- +- opA * +- opB",
+    "Multiply two signed operands A and B to produce a 2-byte result.",
+    "Use in place of MULT when multiplying the  sign bytes (MSBs) of signed operands A and B.")
+
+OPC(ltc,        "x rrrrr x x x z 00000 xxxx xx x x eee eeeeee rrrrrr xxxxxx xxxxxxxx", CONTNULL,
+    "Less than C", "flag <- 0 if result < C",
+    "Asserted-low unsigned comparison check.  Use for first (top) byte, with "
+     "LTC CMP for lower bytes.  Can be used with MOVE to compare two operands or "
+     "with an arithmetic instruction such as ADD.",
+    "This instruction is geared for use on the bitshifter. "
+     "A push "
+      "will maintain activity in all PEs for which the condition holds. "
+     "The flag bus must be inverted with FBINV to "
+     "directly set the MASK or save an asserted-high value.  Use FBINV for greater than or equal. "
+     "To perform a less-than-or-equal check onto the bitshifter, do, for example, "
+     "LTC PUSH followed by NOP EQLATCH FBINV BSOR") 
+OPC(sltc,        "x rrrrr x x x w 00001 xxxx xx x x eee eeeeee rrrrrr xxxxxx xxxxxxxx", CONTNULL,
+    "Signed Less than C", "flag <- 0 if result < C",
+    "Asserted-low signed comparison check.  Use for first (top) byte, with "
+     "SLTC CMP for lower bytes (SLTC CMPSWAP, with operands swapped, if FBINV is set).  Use with MOVE or other ALU instruction.",
+    "This instruction is geared for use on the bitshifter.  "
+     "A push will maintain activity in all PEs for which the condition holds. "
+     "The flag bus must be inverted with FBINV to "
+     "directly set the MASK or save an asserted-high value.  Use FBINV for greater than or equal. "
+     "To perform a less-than-or-equal check onto the bitshifter, do, for example, "
+     "SLTC PUSH followed by NOP EQLATCH FBINV BSAND") 
+OPC(equalc,     "x rrrrr x x x w 10000 xxxx xx x x eee eeeeee rrrrrr xxxxxx xxxxxxxx", CONTNULL,
+    "Equal to C", "flag <- 0 if result < C",
+    "Asserted-low unsigned comparison check. Single precision.  For multiprecision, "
+     "perform a multiprecision LTC/LTC MP on the data and on the next instruction "
+     "use EQLATCH to put the equality latch on the flag bus and FBINV to make it asserted-low. Use with MOVE or other ALU instruction.", 
+    "This instruction is geared for use on the bitshifter. "
+     "A push will maintain activity in all PEs for which the condition holds. "
+     "The flag bus can be inverted with FBINV to "
+     "directly set the MASK, save an asserted-high value, or complement the test.")
+OPC(nop,         "x 00101 0 0 0 z xwxxx zzzz zz z z zzz 000000 000000 000000 xxxxxxxx", CONTNULL,
+    "NOP", "-",
+    "No Kestrel array operation.",
+    "")
+
+OPC(mp,    "x rrrrr 0 1 1 x xxxxx xxxx xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+    "Arithmetic Multiprecision Indicator", "MP <- 1",
+    "Set the ALU to use multiprecision mode.  Does not affect multiplier "
+     "or comparator operation.",
+    "")
+    
+OPC(qtoarr,   "x xxxxx x x x x xxxxx xxxx xx x x xxx xxxxxx xxxxxx rxxxxx xxxxxxxx",
+    "xx x xxx x xxxxxxxxxxxxxxxx x x x 1 1 1 x xx x x xx x x x x x x xx",
+    "Queue In to Array", "Array <- Qin",
+    "Use the next input queue value as the array input.  If the destination "
+     "register is a left register, the input value is written to the "
+     "rightmost register bank.  If the destination is a right register, the "
+     "input value is written to the left register bank.",
+        "")
+OPC(scrtoarr, "x xxxxx x x x x xxxxx xxxx xx x x xxx xxxxxx xxxxxx rxxxxx xxxxxxxx",
+    "xx x xxx x xxxxxxxxxxxxxxxx x x x 1 0 0 x xx x x xx x x x x x x xx",
+    "Scratch to Array", "Array <- Scratch",
+    "Use the controller's scratch register as the array input. "
+     "If the destination "
+     "register is a left register, the input value is written to the "
+     "rightmost register bank.  If the destination is a right register, the "
+     "input value is written to the left register bank.",
+        "")
+OPC(arrtoq,  "x xxxxx x x x x xxxxx xxxx xx x x xxx xxxxxx xxxxxx rxxxxx xxxxxxxx",
+    "xx x xxx x xxxxxxxxxxxxxxxx x x 1 x x x 1 00 x x xx x x x x x x xx",
+    "Array to Q Out", "Qout, Scratch <- Array",
+    "Write the array's output to the output queue and the controller's "
+     "scratch register.  If the destination "
+     "register is a left register, the output value is the value written by "
+     "the leftmost processing element and register bank. "
+     "If the destination is a right register, the "
+     "output value is from the rightmost processing element.",
+        "If the outputting PE is masked, no output is produced.")
+OPC(arrtoscr,  "x xxxxx x x x x xxxxx xxxx xx x x xxx xxxxxx xxxxxx rxxxxx xxxxxxxx",
+    "xx x xxx x xxxxxxxxxxxxxxxx x x 0 x x x 1 00 x x xx x x x x x x xx",
+    "Array to Scratch", "Scratch <- Array",
+    "Write the array's output to the controller's scratch register. "
+     "If the destination "
+     "register is a left register, the output value is the value written by "
+     "the leftmost processing element and register bank. "
+     "If the destination is a right register, the "
+     "output value is from the rightmost processing element.",
+        "If the outputting PE is masked, no output is produced.")
+
+FOPC(scrtocntlo, cnt_wr, "01",
+    "Scratch to Counter Low", "Counter[0:7] <- Scratch",
+     "Copy the controller's scratch register to the low byte of "
+     "the controller's top of counter stack register.",
+        "")
+FOPC(scrtocnthi, cnt_wr, "10",
+    "Scratch to Counter High", "Counter[8:15] <- Scratch",
+    "Copy the controller's scratch register to the high byte of "
+     "the controller's top of counter stack register.",
+        "")
+FOPC (force, force, "1",
+     "Force operation", "",
+     "Require all PEs to perform the given instructions regardless "
+      "of Mask flag or BeginCond/EndCond state.",
+      "Bitshifter operations geared to conditional processing include "
+       "an implicit force for the bitshifter operation."
+)
+     
+/* ALU carry in */
+FOPC(c0, ci, "0",
+     "Carry-in 0", "Cin <- 0",
+     "Set the ALU's carry-in to 0", 
+    "")
+FOPC(c1, ci, "1",
+     "Carry-in 1", "Cin <- 1",
+     "Set the ALU's carry-in to 1", 
+     "") 
+FOPC(b1, ci, "0",
+     "Borrow-in 1", "Cin <- ! 1",
+     "Use a borrow-in of 1 (equivalent to c0)", 
+    "")
+FOPC(b0, ci, "1",
+     "Borrow-in 0", "Cin <- ! 0",
+     "Use a borrow-in of 0 (equivalent to c1)", 
+     "") 
+
+/* scratch register source: 0 and 1 are specified by writeRight and writeLeft */
+OPC(qtoscr,    KESNULL, "xx x xxx x xxxxxxxxxxxxxxxx x x x x x x 1 10 x x xx x x x x x x xx",
+    "Queue in to scratch", "Scr <- Qin",
+    "Place a byte from the input queue in the controller's scratch register.",
+    "")
+OPC(cbstoscr,    KESNULL, "xx x xxx x xxxxxxxxxxxxxxxx x x x x x x 1 11 x x xx x x x x x x xx",
+    "Controller BS to scratch", "Scr <- CBS",
+    "Copy the controller's bit shifter register to the scratch register.",
+    "")
+
+/* instruction branches */
+     /*     
+OPC(return,      KESNULL, "xx x xxx x xxxxxxxxxxxxxxxx x x x x x x x xx x x xx 0 x x x 1 0 10",
+    "Return", "",
+    "Jump to the top address on the return stack and pop the return stack.",
+    "")
+     */
+     
+OPC(jump,        KESNULL, "xx x xxx x llllllllllllllll x x x x x x x xx x x xx 0 x x x 0 0 01",
+    "Jump", "",
+    "Jump to the specified label.",
+    "")
+OPC(jumpwor,     KESNULL, "xx x xxx x llllllllllllllll x x x x x x x xx x x xx 1 x x x 0 0 00",
+    "Jump on wired or", "",
+    "Jump to the specified label if the array's wired-or is 1.",
+    "There may be unresolved timing issues with this instruction.")
+     /*
+OPC(jsr,         KESNULL, "xx x xxx x llllllllllllllll x x x x x x x xx x x xx 1 x x x 0 1 01",
+    "Jump subroutine", "",
+    "Push PC+1 onto the return stack and jump to the specified label.",
+    "")
+     */
+OPC(scrtoimm,
+    "x xxxxx x x x x xxxxx xxxx xx x x xxx xxxxxx xxxxxx xxxxxx 00000000",
+    "xx 0 xxx x xxxxxxxxxxxxxxxx x x x x x x x xx x x 11 x x x x x x xx",
+    "Scratch to immediate", "",
+     "Replace the array immediate field with the controller's "
+      "scratch register.  Can also be expressed as \\#scr wherever "
+      "an immediate is used.",
+     "Do not change the scratch register on the previous instruction.")
+FOPC(forceQout, fifo_out, "1",
+     "Force Qout", "",
+     "Force write to output queue regardless of array mask output.",
+     "")
+
+FOPC(breakpoint, cbreak, "1",
+     "Breakpoint", "",
+     "Set a program breakpoint.",
+     "")
+
+/* bit shifter s */
+FOPC(bsnotmask, bit,    "0001",
+     "Not Mask", "Mask <- ! Mask",
+     "Complement the mask flag. ",
+     "Occurs in all PEs regardless of Mask value.")
+OPC(bsflagmask,     "x xxxxx x x x x rrrrr 0010 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Flag Mask", "Mask <- flag",
+     "Copy the specified flag bit to the mask register.",
+     "Occurs in all PEs regardless of Mask value.")
+OPC(bscondleft,     "x xxxxx x x x x rrrrr 0011 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Conditional left shift", "BS[7:0] <- (BS[6:0],flag)",
+     "Left-shift the bitshifter, appending the flag.",
+     "Occurs only in unmasked PEs.")
+OPC(bsor,     "x xxxxx x x x x rrrrr 0100 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Or bitshifter", "BS[7] <- BS[7] | flag,  Mask <- NOR(BS)",
+     "Or the flag bit into the MSB of the bitshifter. "
+      "Both the flag and BS[7] are asserted LOW for this operation. ",
+     "Occurs in all PEs.  Mask bit is changed.  ")
+OPC(bsand,     "x xxxxx x x x x rrrrr 0101 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "And bitshifter", "BS[7] <- BS[7] & flag,  Mask <- NOR(BS)",
+     "And the flag bit into the MSB of the bitshifter. "
+      "Both the flag and BS[7] are asserted LOW for this operation. ",
+     "Occurs in all PEs.  Mask bit is changed.")
+OPC(bsnot,     "x xxxxx x x x x xxxxx 0110 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Not bitshifter", "BS[7] <- ! BS[7],  Mask <- NOR(BS)",
+     "Complement the MSB of the bitshifter.  Use for Else clause.",
+     "Occurs in all PEs.  Mask bit is changed.")
+OPC(bsset,     "x xxxxx x x x x rrrrr 0111 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Set bitshifter", "BS[7] <- flag,  Mask <- NOR(BS)",
+     "Set the MSB of the bitshifter.  Use for Else clause.",
+     "Occurs in all PEs.  Mask bit is changed.")
+OPC(bsclear,     "x xxxxx x x x x xxxxx 1000 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Clear bitshifter", "BS <- 0,  Mask <- Mask",
+     "Clear the bitshifter.",
+     "Occurs in all PEs.  Mask bit is NOT changed.")
+OPC(bsclearm,     "x xxxxx x x x x xxxxx 1001 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Clear bitshifter set mask", "BS <- 0,  Mask <- 1",
+     "Clear the bitshifter.",
+     "Occurs in all PEs.  Mask bit is changed.")
+OPC(bspopnot,     "x xxxxx x x x x xxxxx 1010 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Not bitshifter", "BS[7:0] <- (! BS[6],BS[5:0],0),  Mask <- NOR(BS)",
+     "Shift bitshifter and Complement the new MSB of the bitshifter. "
+      "Use for Else clause at one-greater nesting level.",
+     "Occurs in all PEs.  Mask bit is changed.")
+OPC(bspop,     "x xxxxx x x x x xxxxx 1011 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Pop bitshifter", "BS[7:0] <- (BS[6:0],0),  Mask <- NOR(BS)",
+     "Shift bitshifter.  Use for complete a conditional nesting level.",
+     "Occurs in all PEs.  Mask bit is changed.")
+OPC(bslatch,     "x xxxxx x x x x xxxxx 1100 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Unconditional bitshifter latch", "BS <- result,  Mask <- NOR(BS)",
+     "Unconditionally latch the instruction result in the bitshifter.",
+     "Occurs in all PEs.  Mask bit is changed.")
+OPC(bscondlatch,     "x xxxxx x x x x xxxxx 1101 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Conditional bitshifter latch", "BS <- result",
+     "Conditionally latch the instruction result in the bitshifter.",
+     "Occurs in PEs with asserted Mask flag.")
+OPC(bspush,     "x xxxxx x x x x rrrrr 1110 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Push bitshifter", "BS[7:0] <- (flag, BS[7:1]),  Mask <- NOR(BS)",
+     "Push a new condition on the bitshifter and reset the Mask.",
+     "Occurs in all PEs.  Mask bit is changed.")
+OPC(bscondright,     "x xxxxx x x x x rrrrr 1111 xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Conditional right shift", "BS[7:0] <- (flag,BS[7:1])",
+     "Right-shift the bitshifter, prepending the flag.",
+     "Occurs only in unmasked PEs.")
+/* two bit shifter s that have their own controller fields. */
+FOPC(cbsload, bs_load, "1",
+     "Controller BS load", "",
+     "Load the controller's Bitshifter with the 8 wired-OR signals.",
+     "")
+FOPC(cbssleft, bs_sleft, "1",
+     "Controller BS shift", "",
+     "Shift a wired-or bit onto the low bit of the controller's bitshifter.",
+     "")
+FCALL (cmp, 0, "x xxxxx x x x w 00xxx xxxx xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+       "Comparator multiprecision", "",
+       "Use for low bytes of a multiprecision selection or comparison instruction.",
+       "Cannot be used with signed comparison operations; instead use CMPSWAP.")
+FCALL (cmpswap, 0, "x xxxxx x x x w 00xxx xxxx xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+       "Comparator multiprecision", "",
+       "Use for low bytes of a multiprecision selection or comparison instruction.",
+       "Can only be used with signed min/max/comparison operation.  The low byte operands "
+        "must be in the opposite order from the high byte operands.  In general, "
+        "only signed register-register comparisons can be performed because the various "
+        "operand B alternatives (mdr, immediate, etc) cannot be used as an operand A. "
+        "For example, if taking the signed maximum of (2,1) and (4,3) into (8,7), the "
+       "appropriate instructions are SMAXC 8,2,4  and SMAXC CMPSWAP 7,3,1.")
+OPC(minc,    "x zzabw z z z 1 00000 xxxx 11 x x eee eeeeee rrrrrr rrrrrr xxxxxxxx", CONTNULL,
+    "Minimize with C", "dest <- min(result, opC)",
+    "Select the minimum of the result and operand C.  Can use directly with a single operand "
+     "or combine with an ALU instruction as in ADD MINC dest, op1, op2, opC.  For "
+     "multiprecision addmin, use ADD on the lowest bytes saving to a register, "
+     "ADD MP on the middle bytes saving to a register, ADD MP MINC on the top byte, "
+     "and MINC CMP on the saved registers and lower bytes of the comparison operand.",
+    "")
+OPC(modminc,  "x zzabw x x x 1 00010 xxxx 11 x x eee eeeeee rrrrrr rrrrrr xxxxxxxx", CONTNULL,
+    "Minimize with C, Mod 256", "dest <- modmin(result, opC)",
+    "Select the mod-256 minimum of the result and operand C. "
+     "Use on top byte of multiprecision operands with MODMINC CMP on lower bytes. "
+     "May be used with two operands by itself or with an ALU instruction.",
+    "")
+OPC(sminc,    "x zzabw x x x 0 00001 xxxx 11 x x eee eeeeee rrrrrr rrrrrr xxxxxxxx", CONTNULL,
+    "Minimize with C, Signed", "dest <- min(result, opC)",
+    "Select the minimum of the signed result and signed operand C. "
+     "Use on top byte of multiprecision operands and SMINC CMPSWAP with "
+     "swapped register operands on the lower bytes. "
+     "May be used with two operands by itself or with an ALU instruction.",
+    "See comment for CMPSWAP on operand swapping.")
+OPC(maxc,    "x zzabw x x x 0 00000 xxxx 11 x x eee eeeeee rrrrrr rrrrrr xxxxxxxx", CONTNULL,
+    "Maximize with C", "dest <- max(result, opC)",
+    "Select the maximum of the result and operand C. "
+     "Use on top byte of multiprecision operands (MAXC CMP on lower bytes). "
+     "May be used with two operands by itself or with an ALU instruction.",
+    "")
+OPC(modmaxc,    "x zzabw x x x 0 00010 xxxx 11 x x eee eeeeee rrrrrr rrrrrr xxxxxxxx", CONTNULL,
+    "Maximize with C, Mod 246", "dest <- modmax(result, opC)",
+    "Select the mod-256 maximum of the result and operand C. "
+     "Use on top byte of multiprecision operands with MODMAXC CMP on "
+     "lower bytes.  "
+     "May used with two operands by itself or with an ALU instruction.",
+    "")
+OPC(smaxc,    "x zzabw x x x 1 00001 xxxx 11 x x eee eeeeee rrrrrr rrrrrr xxxxxxxx", CONTNULL,
+    "Maximize with C, Signed", "dest <- max(result, opC)",
+    "Select the maximum of the signed result and signed operand C. "
+     "Use on top byte of multiprecision operands with SMAXC CMPSWAP "
+      "with swapped register operands on lower bytes. "
+     "May be used with two operands by itself or with an ALU instruction.",
+     "See comment for CMPSWAP on operand swaping.")
+OPC(selectc,   "x zzabw x x x z rrrrr xxxx 11 x x eee eeeeee rrrrrr rrrrrr xxxxxxxx", CONTNULL,
+    "Select", "dest <- (flag=0) ? opC : result",
+    "Asserted low selection.  Select between operand C and the result according to the specified flag. "
+     "May be used with two operands by itself or with an ALU instruction.",
+    "Select may be done top-down or bottom-up.  Selection between (1,2)+(3,4) and (5,6) "
+     "into (7,8) requires three instructions:  ADD 8,2,4 followed by ADD MP SELECT 7,1,3,5 "
+     "followed by SELECT 8,8,6.  The chosen flag must be specified with each selection "
+     "command, and (3,4) is a non-register operand B.  FBINV may be used to change the polarity "
+     "of the selection.")
+
+FOPC(fbminlatch, fb, "00011",
+     "Min latch", "flag <- minlatch",
+     "Set flag bus to comparator's min latch.",
+     "")
+FOPC(fbcbo, fb,      "00100",
+     "Comparator borrow out", "flag <- cbo",
+     "Set flag bus to comparator's borrow out.",
+     "")
+FOPC(fbcts, fb,      "00101",
+     "Comparator true sign", "flag <- cts",
+     "Set flag bus to comparator true sign.",
+     "")
+FOPC(fbcmsb, fb,     "00110",
+     "Comparator MSB", "flag <- cmsb",
+     "Set flag bus to the comparator's MSB.",
+     "")
+FOPC(fbbsnor, fb,    "01000",
+     "Bitshifter NOR", "flag <- bsnor",
+     "Set flag bus to the NOR of the bitshifter.",
+     "")
+FOPC(fbbs0, fb,      "01001",
+     "Bitshifter 0", "flag <- bs0",
+     "Set flag bus to the LSB of the bitshifter.",
+     "")
+FOPC(fbbs7, fb,      "01010",
+     "Bitshifter 7", "flag <- bs7",
+     "Set flag bus to the MSB of the bitshifter.",
+     "")
+FOPC(fbwor, fb,      "01011",
+     "Wired-or", "flag <- wor",
+     "Set flag bus to wired-or of all PEs in the same group of 64.",
+     "")
+FOPC(fbats, fb,      "01100",
+     "ALU true sign", "flag <- ats",
+     "Set flag bus to ALU's true sign output.",
+     "")
+FOPC(fbaco, fb,      "01101",
+     "ALU carry out", "flag <- aco",
+     "Set flag bus to the carry out from the ALU.",
+     "")
+FOPC(fbclatch, fb,   "01110",
+     "Carry latch", "flag <- clatch",
+     "Set flag bus to ALU's carry latch.",
+     "")
+FOPC(fbeq, fb,       "10000",
+     "Equal", "flag <- eq",
+     "Set flag bus to the comparators equal output.",
+     "")
+FOPC(fbeqLatch, fb,  "10001",
+     "Eqlatch", "flag <- eqLatch",
+     "Set flag bus to the comparator's equality latch .",
+     "")
+FOPC(fbmeshl1, fb,   "10100",
+     "Meshl1", "flag <- meshl1",
+     "Set flag bus to meshl1.",
+     "")
+FOPC(fbmeshr1, fb,   "10101",
+     "Meshr1", "flag <- meshr1",
+     "Set flag bus to meshr1.",
+     "")
+FOPC(fbmeshu8, fb,   "10110",
+     "Meshu8", "flag <- meshu8",
+     "Set flag bus to meshu8.",
+     "")
+FOPC(fbmeshd8, fb,   "10111",
+     "Meshd8", "flag <- meshd8",
+     "Set flag bus to meshd8.",
+     "")
+FOPC(fbmeshl2, fb,   "11000",
+     "Meshl2", "flag <- meshl2",
+     "Set flag bus to meshl2.",
+     "")
+FOPC(fbmeshr2, fb,   "11001",
+     "Meshr2", "flag <- meshr2",
+     "Set flag bus to meshr2.",
+     "")
+FOPC(fbmeshu16, fb,  "11010",
+     "Meshu16", "flag <- meshu16",
+     "Set flag bus to meshu16.",
+     "")
+FOPC(fbmeshd16, fb,  "11011",
+     "Meshd16", "flag <- meshd16",
+     "Set flag bus to meshd16.",
+     "")
+FOPC(fbmeshl4, fb,   "11100",
+     "Meshl4", "flag <- meshl4",
+     "Set flag bus to meshl4.",
+     "")
+FOPC(fbmeshr4, fb,   "11101",
+     "Meshr4", "flag <- meshr4",
+     "Set flag bus to meshr4.",
+     "")
+FOPC(fbmeshu32, fb,  "11110",
+     "Meshu32", "flag <- meshu32",
+     "Set flag bus to meshu32.",
+     "")
+FOPC(fbmeshd32, fb,  "11111",
+     "Meshd32", "flag <- meshd32",
+     "Set flag bus to meshd32.",
+     "")
+
+/* FCALL name (function will be Kname), if it uses up rest of line, KOPC, COPC, and doc */
+/* Funnamection can use kopc and copc fields if desired (not automatically merged).  Function returns "
+   1 if it generates code.  Ownline settings:  2:  uses up entire line.  1: must be on own lnameine "
+   "and error message printed if there are extra tokens on line.  0: does not have to be on own line.  */
+FCALL(fbinv, 0, "x xxxxx x x x w xxxxx xxxx xx x x xxx xxxxxx xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+     "Flag invert", "flag <- ! flag",
+     "Invert the flag bus value from that defined by the associated instruction.",
+     "")
+FCALL(define,      2, NULL, NULL,
+      "Define symbol", "",
+      "Define a KASM symbol, as in `define NumPE 512'. "
+       "The text is added to the symbol table and can be referred to by "
+       "\\$NumPE or \\$NumPE\\$.  No white space is introduced in the "
+       "expansion.  Symbols are case-insensitive and may only include "
+       "letters and underscores.",
+      "Define must occur on a line by itself.  KASM does not support static "
+       "expression evaluation but resolves nested definitions as in "
+       "`define NumData \\$NumPE'.  There is a compiled limit of " MAXSYMS 
+       " symbols including active macro parameters and definitions. "
+       "Definitions and labels have dynamic scope:  if X is defined "
+       "in macro M1, and M1 calls macro M2, X is defined in M2.")
+FCALL(include,     1, NULL, NULL,
+      "Include KASM file", "",
+      "Read a KASM file into the assembler.",
+      "")
+FCALL(beginCond,   1, NULL, NULL, 
+      "Begin conditional", "",
+      "BeginCond/EndCond pairs indicate nesting of conditionals. "
+       "While inside a conditional section, the Kestrel force bit "
+       "is by default turned off.  Code can be forced within a "
+       "BeginCond/EndCond with the FORCE modifier.",
+      "BeginCond and EndCond do not generate any machine code.")
+FCALL(endCond,     1, NULL, NULL,
+      "End conditional", "",
+      "BeginCond/EndCond pairs indicate nesting of conditionals. "
+       "While inside a conditional section, the Kestrel force bit "
+       "is by default turned off.  Code can be forced within a "
+       "BeginCond/EndCond with the FORCE modifier.",
+      "BeginCond and EndCond do not generate any machine code.")
+/*  Kestrel opc  frc fnc ci mplcfi fb    bit rm r w opB   opA    opC    opD      imm,  doc */
+FCALL(read,  0, "x xxxxx x x x x xxxxx xxxx xx 1 z xxx xxxxxx xxxxxx xxxxxx rrrrrrrr", CONTNULL,
+      "Read SRAM", "MDR <- SRAM[address]",
+      "Perform a read from the local memory.  Address can be of several forms:"
+       "{\\tt read (\\#nnn)}, {\\tt read (L3)}, or {\\tt read (\\#nnn + "
+       "L3)}, where L3 can be any register.  Memory addressing always "
+       "uses the immediate field, so the second form includes an "
+       "implicit {\\tt + \\#0}.  When a register is specified in an "
+       "address, it is operand C.  Thus, memory operations are "
+       "generally not performed with comparator instructions.  The data "
+       "retrieved is placed in the memory data register for use during subsequent instructions.",
+      "Only one SRAM operation (read or write) is permitted in an instruction.")
+FCALL(write, 0, "x xxxxx x x x x xxxxx xxxx xx z 1 xxx xxxxxx xxxxxx xxxxxx rrrrrrrr", CONTNULL,
+      "Write SRAM", "SRAM[address] <- result",
+      "Perform a write to the local memory.  Address can be of several forms: "
+       "{\\tt write (\\#nnn)}, {\\tt write (L3)}, or {\\tt write (\\#nnn + "
+       "L3)}, where L3 can be any register.  Memory addressing always "
+       "uses the immediate field, so the second form includes an "
+       "implicit {\\tt + \\#0}.  When a register is specified in an "
+       "address, it is operand C.  Thus, memory operations are "
+       "generally not performed with comparator instructions.",
+      "")
+FCALL(beginLoop, 0, KESNULL,  
+      "xx x xxx x rrrrrrrrrrrrrrrr x x x x x x x xx x x xx 0 0 0 1 x x xx",
+      "Begin loop", "",
+      "A controller loop includes a BeginLoop with a controller "
+       "immediate as argument, which pushes a new counter onto the "
+       "counter stack.  The matching EndLoop will decrement the counter "
+       "and branch back if the counter is not -1.",
+        "The ASSEMBLER will automatically decriment your controller "
+         "immediate value so that the number of iterations is the same "
+         "as the value of the controller immediate. "
+         "This decriment will "
+         "be removed with the controller redesign, in which the counter "
+         "comparison will be to 0 rather than -1. ")
+FCALL(beginLoopScr, 0, KESNULL,
+     "xx x xxx x xxxxxxxxxxxxxxxx x x x x x x x xx x x xx x x x x x x xx",
+       "Begin loop scratch", "",
+      "An assembler pseudo-instruction (no machine code is generated) "
+       "for beginning a loop with a "
+       "preloaded loop counter.  The assembler will match this with "
+       "a nested EndLoop.  To preload the counter from, for example, the "
+       "input queue, perform:  qintoscr, cntpush 0 ; nop ; "
+       "scrtocntlo, qintoscr ; "
+       "nop ; scrtocnthi, beginLoopScr ; ... ; endLoop.   "
+       "The matching EndLoop will decrement the counter "
+       "and branch back if the counter is not -1.",
+        "WARNING:  The controller redesign will include modifying the "
+         "branch condition to the expected branch if counter is not 0. "
+         "This will modifiy the semantics of this instruction because "
+         "the decriment applied by the assembler with beginLoop is not applied "
+         "to beginLoopScr. A beginLoopScr will iterate one more time than "
+         "the value loaded into the loop counter. "
+        "In the above example, the NOPs are required because the "
+        "scratch register is always written at the start of the next "
+        "instruction.  This is because the scratch register is normally "
+        "used for array outputs.")
+OPC (cntpush, KESNULL,
+      "xx x xxx x rrrrrrrrrrrrrrrr x x x x x x x xx x x xx 0 0 0 1 x x xx",
+     "Counter push", "Count <- ContImm",
+     "Push the 16-bit controller immediate onto the counter stack. "
+      "This is identical to a BeginLoop except that the assembler "
+      "does not generate a looping label",
+     "")
+     
+FCALL(endLoop,   0, KESNULL, 
+      "xx x xxx x llllllllllllllll x x x x x x x xx x x xx 0 1 1 0 x x xx",
+      "End loop", "",
+      "A controller loop includes a BeginLoop with a controller "
+       "immediate as argument, which pushes a new counter onto the "
+       "counter stack.  The matching EndLoop will decrement the counter "
+       "and branch back if the counter is not -1.",
+      "WARNING:  The semantics of this instruction will change to branch "
+       "back if counter is not 0 after decrement in the controller redesign. "
+        "This will "
+       "not affect BeginLoop/EndLoop because of the automatic decrement, but will affect CNTPUSH "
+       "and BEGINLOOPSCR.")
+OPC(jdcntnz, KESNULL, 
+      "xx x xxx x llllllllllllllll x x x x x x x xx x x xx 0 1 1 0 x x xx",
+      "Jump decrement counter not zero", "",
+      "Jump if the controller's top of counter stack is not zero before the decrement.",
+      "WARNING:  The semantics of this instruction will change to branch "
+       "back if counter is not 0 after decrement in the controller redesign. "
+       "Identical to endLoop, but without the assembler matching "
+       "the label up with the appropriate beginLoop.")
+     
+/* Operand B definitions:  These are explicitly defined in codeteble.c as well. "
+   "Because they are intercepted by parseoperand during assembly, they are "
+   "never parsed the standard way. */
+OPC(opBreg,   "x xxxxx x x x x xxxxx xxxx xx x x 000 xxxxxx rrrrrr xxxxxx xxxxxxxx", CONTNULL,
+     "Register opB", "opB <- opC",
+     "Select a register (specified as L0-L31 or R0-R31) for operand B. "
+      "If operand C is used in this instruction, the same register must "
+      "be specified for operand C and operand B.  Because of this restriction, "
+      "the assembler prefers to assign register operands to operand A rather than operand B "
+      "where possible.",
+     "The OPBREG specifier is optional.")
+OPC(opBsreg,  "x xxxxx x x x x xxxxx xxxx xx x x 001 xxxxxx rrrrrr xxxxxx xxxxxxxx", CONTNULL,
+     "Sign extend Register opB", "opB <- opC[7]",
+     "Select the sign extension of a register (specified as SL0-SL31 or SR0-SR31) "
+      "for operand B. "
+      "If operand C is used in this instruction, the same register must "
+      "be specified for operand C and operand B.",
+     "The OPBSREG specifier is optional.")
+FOPC(mdr,  opB,  "010",
+     "MDR opB", "opB <- MDR",
+     "Select the SRAM's memory data register as operand B.",
+     "Use READ on a previous instruction to load the MDR from SRAM.")
+FOPC(smdr, opB,  "011",
+     "Sign extend MDR opB", "opB <- SgnEx (MDR[7])",
+     "Select the sign extension of the memory data register as operand B.",
+     "Use READ on a previous instruction to load the MDR from SRAM.")
+FOPC(mhi,  opB,  "100", 
+     "Multhi opB", "opB <-  mhi",
+     "Set opB to multiplier high byte register mhi, the result of a previous multiply.",
+     "")
+FOPC(smhi, opB,  "101",
+     "Sign extend multhi opB", "opB <-  SgnEx (mhi[7])",
+     "Set opB to sign extension of the  multiplier high byte, "
+     "the result of a previous multiply.",
+     "")
+FOPC(bs,   opB,  "110",
+     "Bit shifter opB", "opB <- bs",
+     "Select the bitshifter as operand B.",
+     "")
+OPC(opBimm,  "x xxxxx x x x x xxxxx xxxx xx x x 111 xxxxxx xxxxxx xxxxxx rrrrrrrr", CONTNULL,
+     "Immediate opB", "opB <- \\#nnnn",
+     "Select an immediate as operand B.  The immediate can be a signed (-128 to 127) "
+      "or unsigned decimal (0 to 255), unsigned octal (0000 to 0377), or unsigned "
+      "hexadecimal (0x00 to 0xff).  The immediate is proceeded by a pound sign (\\#) to "
+      "distinguish it from the controller immediate.  See also SCRTOIMM. ",
+     "The OPBIMM specifier is optional.")
+OPC(opAreg,  "x xxxxx x x x x xxxxx xxxx xx x x xxx rrrrrr xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+    "Register opA", "opA <- Register",
+    "Select a register (specified as L0-L31 or R0-R31) for operand A.",
+    "The OPAREG specifier is optional.")
+OPC(opCreg,  "x xxxxx x x x x xxxxx xxxx xx x x xxx rrrrrr xxxxxx xxxxxx xxxxxxxx", CONTNULL,
+    "Register opC", "opC <- Register",
+    "Select a register (specified as L0-L31 or R0-R31) for operand C.  This register "
+     "may also be accessed or used as operand B.",
+    "The OPCREG specifier is optional")
+OPC(destreg,  "x xxxxx x x x x xxxxx xxxx xx x x xxx xxxxxx xxxxxx rrrrrr xxxxxxxx", CONTNULL,
+    "Register destination", "dest is Register",
+    "Select a register (specified as L0-L31 or R0-R31) for the destination.   All instructions "
+     "write to a destination register, which defaults to register L0 if "
+     "not specified.  The destination is always the first register on a line of code.",
+    "The DESTREG specifier is optional")
+/* BeginMacro/EndMacro are intercepted by the assembler.  The following provides documentation. */
+FCALL (MacroDef, 0, NULL, NULL,
+       "Macro definition", "",
+       "MacroDef/MacroEnd pairs indicate the definition of a macro.  A "
+        "statement of the form `MacroDef MacName (p1,p2,p3)' must be on "
+        "a line by itself.  The macro MacName is entered into the "
+        "symbol table along with its parameters (if there are no "
+        "parameters, both left and right parenthesis are still "
+        "required).  "
+        "The lines of code between the MacroDef and MacroEnd (on its "
+        "own line) are stored for future use, including any present "
+        "including `include' or `define' statements.  A macro cannot be "
+        "defined within another macro. "
+      
+        "To use a macro, put, for example, `MacName (L1, L2, \\#37)' on "
+        "a line by itself or with a comment.  At the start of the "
+        "macro, an implicit define for each parameter will be "
+        "performed, and a substitution will be made for the formal "
+        "parameters when required.  As with other define statements, "
+        "formal parameter names must be preceded with a dollar sign. "
+
+        "For various reasons, KASM uses dynamic scoping.  That is, "
+        "if a symbol is not defined in the current context (ie, "
+        "the current macro being parsed), it is searched for in "
+        "the macro calling stack back up to the global context. "
+
+        "It is highly recommended that this feature be used with "
+        "care; passing parameters (e.g., labels) down the macro "
+        "call stack is greatly preferred over relying on labels "
+        "defined based on dynamic scope. "
+
+        "Arguments to macros that are themselves defined (including "
+        "labels) are evaluated within the context of the calling "
+        "code.  "
+
+        "A macro can call another macro.  The KASM assembler will keep "
+        "track of a sequence of nested macro calls in its error "
+        "messages and debugging line numbers so that macro use can be "
+        "traced.   An error line number of the form "
+        "`x.kasm:5:x.kasm:20' indicates that an error occured in the "
+        "macro's line 5, where the macro was called from line 20.",
+       "Limits of " MAXARGSS " parameters and " 
+        MAXMACROS " macros are compiled into the assembler.")
+
+FCALL (MacroEnd, 0, NULL, NULL,
+      "End macro definition", "",
+      "End a macro definition.  See MacroDef.",
+      "")
+
